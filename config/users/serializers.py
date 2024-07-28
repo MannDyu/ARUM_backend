@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User #장고 기본 유저모델
 from django.contrib.auth.password_validation import validate_password #검증
-
+from .models import Profile
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token #토큰 모델
 from rest_framework.validators import UniqueValidator #이메일 중복 방지
@@ -60,5 +60,8 @@ class LoginSerializer(serializers.Serializer):
         )
 
 
-
+class ProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Profile
+        fields = ("nickname", "position", "subjects", "image")
 
