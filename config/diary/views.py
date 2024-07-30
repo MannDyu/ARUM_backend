@@ -6,7 +6,7 @@ from .serializers import DiarySerializer
 from .models import Diary
 
 
-# 새로운 Diary 뷰 추가
+#생성
 class DiaryCreateView(generics.CreateAPIView):
     queryset = Diary.objects.all()
     serializer_class = DiarySerializer
@@ -20,14 +20,17 @@ class DiaryListView(generics.ListAPIView):
     serializer_class = DiarySerializer
     permission_classes = [IsAuthenticated]
 
+    #queryset을 재정의하여 인증된 사용자의 다이어리 항목만 반환
     def get_queryset(self):
         return Diary.objects.filter(user=self.request.user)
 
+#조회,수정,삭제
 class DiaryDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Diary.objects.all()
     serializer_class = DiarySerializer
     permission_classes = [IsAuthenticated]
 
+    #queryset을 재정의하여 인증된 사용자의 다이어리 항목만 반환
     def get_queryset(self):
         return Diary.objects.filter(user=self.request.user)
 
