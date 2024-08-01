@@ -4,8 +4,10 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 from .serializers import *
 from datetime import date,datetime
+from .serializers import QuestSerializer,QuestHistorySerializer
 
 
 ## 퀘스트 분야 버튼 누르면 quest테이블에 있는 정보 랜덤으로 하나 불러오는 API (요청 url: http://127.0.0.1:8000/quest/randomQuest/(hb,cl,ex,me,dy중 하나)/)
@@ -15,8 +17,10 @@ from datetime import date,datetime
 ## 3. 내부적으로 랜덤 미션 history테이블에 저장
 ## 4. 랜덤 값 리턴
 class RandomQuest(APIView) :
+    # permission_classes = [IsAuthenticated]
 
-    def get(self, request, qs_theme): #url의 파라미터로 전달시 여기서 매개변수로 받음
+    def post(self, request): #url의 파라미터로 전달시 여기서 매개변수로 받음
+        qs_theme = request.data.get('qs_theme')
         if qs_theme not in ['dy', 'cl', 'ex', 'me', 'hb']:
             return Response({"error": "Invalid qs_theme"}, status=status.HTTP_400_BAD_REQUEST)
         
@@ -27,9 +31,10 @@ class RandomQuest(APIView) :
         random_quest = random.choice(quests) #해당 테마의 퀘스트 중 랜덤으로 하나 뽑음
         serializer = QuestSerializer(random_quest) # 해당 모델 값 serializer해서 serializer변수에 저장
         
+
         # Quest_history에 저장 (랜덤으로 오늘의 미션 생성하고 내부적으로 history테이블에 생성된 미션 저장)
         quest_history = Quest_history(
-            user_id= 90000, #request.user.id,  # 인증된 사용자라면 request.user.id 사용
+            user_id=  90000, #request.user, request.user.id,  # 인증된 사용자라면 request.user.id 사용
             qs_theme=random_quest.qs_theme,
             qs_content=random_quest.qs_content
         )
@@ -160,3 +165,62 @@ class SpecificQuestInfo(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         except ValueError:
             return Response({"error": "Invalid date format"}, status=status.HTTP_400_BAD_REQUEST)
+
+## 해당 회원이 오늘 랜덤 테스트를 생성했는지 여부
+class CheckQuestCreatedToday(APIView):
+    def get(self, request):
+        user_id = 90000
+        
+        if not user_id:
+            return Response({"error": "User ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        today = date.today()
+        
+        # Check if there is a Quest_history entry for today
+        quest_exists = Quest_history.objects.filter(user_id=user_id, qs_date=today).exists()
+        
+        return Response({"quest_created_today": quest_exists}, status=status.HTTP_200_OK)
+    
+##해당 회원이 오늘 랜덤 퀘스트를 수행했는지 여부
+class PerformTodayQuestYN(APIView):
+    def get(self,request):
+        user_id = 90000
+        
+        if not user_id:
+            return Response({"error": "User ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        today = date.today()
+        
+        try:
+            quest_history = Quest_history.objects.get(user_id=user_id, qs_date=today)
+            performed = quest_history.qs_perform_yn
+        except Quest_history.DoesNotExist:
+            # If no quest history found for today, assume not performed
+            performed = False
+        
+        return Response({"qs_perform_yn": performed}, status=status.HTTP_200_OK)
+
+##퀘스트 생성과 수행 여부를 한번에 판단하는 메소드 => 이거 사용할거면 위에 2개 지워야함
+class CheckQuestCreationAndPerformanceToday(APIView):
+    def get(self, request):
+        user_id = 90000
+        
+        if not user_id:
+            return Response({"error": "User ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        today = date.today()
+        
+        # Check if quest history exists for today
+        try:
+            quest_history = Quest_history.objects.get(user_id=user_id, qs_date=today)
+            quest_created_today = True
+            quest_performed_today = quest_history.qs_perform_yn
+        except Quest_history.DoesNotExist:
+            quest_created_today = False
+            quest_performed_today = False
+        
+        return Response({
+            "quest_created_today": quest_created_today,
+            "qs_perform_yn": quest_performed_today
+        }, status=status.HTTP_200_OK)
+    
