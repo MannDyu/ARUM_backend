@@ -11,5 +11,5 @@ urlpatterns = [
     
     path('users/', include('users.urls')),
     path('quest/',include('quest.urls')),
-    path('diary', include('diary.urls')),
+    path('diary/', include('diary.urls')),
 ]
