@@ -8,6 +8,7 @@ from rest_framework.validators import UniqueValidator #이메일 중복 방지
 from django.contrib.auth import authenticate
 
 class RegisterSerializer(serializers.ModelSerializer):
+    
     email = serializers.EmailField(
         required = True,
         validators = [UniqueValidator(queryset=User.objects.all())]
@@ -59,9 +60,8 @@ class LoginSerializer(serializers.Serializer):
             {'error' : "user not exist"}
         )
 
-
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        fields = ("nickname", "position", "subjects", "image")
+        fields = ("nickname")
 

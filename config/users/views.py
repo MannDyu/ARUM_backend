@@ -1,10 +1,6 @@
-from datetime import datetime
-from django.utils.timezone import make_aware
-from django.shortcuts import render
 from django.contrib.auth.models import User
 from rest_framework import generics, status
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
 from .serializers import RegisterSerializer, LoginSerializer, ProfileSerializer
 from .models import Profile
 from .permissions import CustomReadOnly
