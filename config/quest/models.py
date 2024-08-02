@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 # Create your models here.
 class Quest(models.Model):
@@ -6,7 +7,7 @@ class Quest(models.Model):
     qs_content = models.CharField(max_length=30)
 
 class Quest_history(models.Model):
-    user_id = models.IntegerField()
+    user_id = models.ForeignKey(User, on_delete=models.CASCADE)  #유저와의 연결
     qs_theme = models.CharField(max_length=2)
     qs_content = models.CharField(max_length=30)
     qs_date = models.DateField(auto_now_add=True)
