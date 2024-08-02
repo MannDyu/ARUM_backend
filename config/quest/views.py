@@ -10,14 +10,14 @@ from datetime import date,datetime
 from .serializers import QuestSerializer,QuestHistorySerializer
 
 
-## 퀘스트 분야 버튼 누르면 quest테이블에 있는 정보 랜덤으로 하나 불러오는 API (요청 url: http://127.0.0.1:8000/quest/randomQuest/(hb,cl,ex,me,dy중 하나)/)
+## 퀘스트 분야 버튼 누르면 quest테이블에 있는 정보 랜덤으로 하나 불러오는 기능
 ## 수행 step
 ## 1. 화면단에서 퀘스트 분야 선택
 ## 2. 화면애서 선택한 분야에 맞는 미션 하나 랜덤으로 디비에서 가져옴
 ## 3. 내부적으로 랜덤 미션 history테이블에 저장
 ## 4. 랜덤 값 리턴
 class RandomQuest(APIView) :
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request): #url의 파라미터로 전달시 여기서 매개변수로 받음
         qs_theme = request.data.get('qs_theme')
@@ -34,7 +34,7 @@ class RandomQuest(APIView) :
 
         # Quest_history에 저장 (랜덤으로 오늘의 미션 생성하고 내부적으로 history테이블에 생성된 미션 저장)
         quest_history = Quest_history(
-            user_id=  90000, #request.user, request.user.id,  # 인증된 사용자라면 request.user.id 사용
+            user_id=  self.request.user,
             qs_theme=random_quest.qs_theme,
             qs_content=random_quest.qs_content
         )
@@ -44,23 +44,24 @@ class RandomQuest(APIView) :
 
 ## 미션완료하면 인증글,사진,미션 수행여부 디비에 업데이트
 class UpdateQuestHistory(APIView):
+    permission_classes = [IsAuthenticated]
+
     ## 수정이랑 포스트 둘 다 같은 로직 수행 so, 로직 함수로 빼고 post,put분기
     def post(self,request):
-        user_id = 90000
-        # user_id = request.data.get('user_id')
-        # if not user_id:
-        #     return Response({"error": "User ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+        user_id = self.request.user.id,#90000
+       
+        if not user_id:
+            return Response({"error": "User ID is required"}, status=status.HTTP_400_BAD_REQUEST)
         return self.update_quest_history(request, user_id)
     
     def put(self,request):
-        user_id = 90000
-        # user_id = request.data.get('user_id')
-        # if not user_id:
-        #     return Response({"error": "User ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+        user_id = self.request.user.id,#90000
+
+        if not user_id:
+            return Response({"error": "User ID is required"}, status=status.HTTP_400_BAD_REQUEST)
         return self.update_quest_history(request, user_id)
     
     def update_quest_history(self, request,user_id):
-        print(f"Request data: {request.data}")  # 디버깅을 위해 추가
         
         try:
             quest_history = Quest_history.objects.get(user_id=user_id, qs_date=date.today())
@@ -88,14 +89,20 @@ class QuestList(APIView) :
         serializer  = QuestHistorySerializer(questList,many=True)
         return Response(serializer.data)
     
-## 해당 회원이 해당 월에 수행한 미션 리스트 정보(날짜만 필요) 가져오기 수행여부도 같이 필요?????
-## 화면에서 날짜 어떻게 줄지몰라 둘 다 구현 프론트랑 상의후 하나 지워야함
+## 해당 회원이 해당 월에 수행한 미션 리스트(날짜 & 수행여부) 가져오기
 class MonthlyQuestList(APIView):
-    def get(self, request, year, month):
-        user_id = 90000
+    permission_classes = [IsAuthenticated]
+    def get(self, request):
+
+        user_id = self.request.user.id
+       
+        date_str = request.data.get('date')
+        date_obj = datetime.strptime(date_str, '%Y-%m-%d')
+        year = date_obj.year
+        month = date_obj.month
+
         # user_id = request.data.get('user_id')
-        # if not user_id:
-        #     return Response({"error": "User ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
             start_date = datetime(year=int(year), month=int(month), day=1)
             end_date = datetime(year=int(year), month=int(month)+1, day=1) if month != 12 else datetime(year=int(year)+1, month=1, day=1)
@@ -104,39 +111,26 @@ class MonthlyQuestList(APIView):
                 user_id=user_id, 
                 qs_date__gte=start_date, 
                 qs_date__lt=end_date
-            ).values_list('qs_date', flat=True)
+            ).values('qs_date', 'qs_perform_yn')
             
             return Response(list(quest_dates), status=status.HTTP_200_OK)
         except ValueError:
             return Response({"error": "Invalid year or month"}, status=status.HTTP_400_BAD_REQUEST)
     
-    def post(self, request):
-        user_id = 90000
-        # user_id = request.data.get('user_id')
-        year = request.data.get('year')
-        month = request.data.get('month')
-
-        if not user_id or not year or not month:
-            return Response({"error": "user_id, year, and month are required"}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            start_date = datetime(year=int(year), month=int(month), day=1)
-            end_date = datetime(year=int(year), month=int(month)+1, day=1) if int(month) != 12 else datetime(year=int(year)+1, month=1, day=1)
-            
-            quest_histories = Quest_history.objects.filter(user_id=user_id, qs_date__gte=start_date, qs_date__lt=end_date).values_list('qs_date', flat=True)
-            serializer = QuestHistorySerializer(quest_histories, many=True)
-            return Response(list(quest_dates), status=status.HTTP_200_OK)
-        except ValueError:
-            return Response({"error": "Invalid year or month"}, status=status.HTTP_400_BAD_REQUEST)
         
 ## 해당 회원이 해당 날짜에 수행한 미션 정보 가져오기
-## 화면에서 날짜 어떻게 줄지몰라 둘 다 구현 프론트랑 상의후 하나 지워야함
 class SpecificQuestInfo(APIView):
-    def get(self, request, year, month,day):
-        user_id = 90000
-        # user_id = request.data.get('user_id')
-        # if not user_id:
-        #     return Response({"error": "User ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user_id = self.request.user.id #90000
+
+        date_str = request.data.get('date')
+        date_obj = datetime.strptime(date_str, '%Y-%m-%d')
+        year = date_obj.year
+        month = date_obj.month
+        day = date_obj.day
+     
         try:
             qs_date = datetime(year=int(year), month=int(month), day=int(day))
             
@@ -147,29 +141,12 @@ class SpecificQuestInfo(APIView):
         except ValueError:
             return Response({"error": "Invalid date format"}, status=status.HTTP_400_BAD_REQUEST)
     
-    def post(self, request):
-        user_id = 90000  # 임시 user_id 값
-        year = request.data.get('year')
-        month = request.data.get('month')
-        day = request.data.get('day')
-
-        if not year or not month or not day:
-            return Response({"error": "Year, month, and day are required"}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            qs_date = datetime(year=int(year), month=int(month), day=int(day))
-            
-            quest_history = Quest_history.objects.filter(user_id=user_id, qs_date=qs_date)
-            
-            serializer = QuestHistorySerializer(quest_history, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except ValueError:
-            return Response({"error": "Invalid date format"}, status=status.HTTP_400_BAD_REQUEST)
 
 ## 해당 회원이 오늘 랜덤 테스트를 생성했는지 여부
 class CheckQuestCreatedToday(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request):
-        user_id = 90000
+        user_id = self.request.user.id
         
         if not user_id:
             return Response({"error": "User ID is required"}, status=status.HTTP_400_BAD_REQUEST)
@@ -183,8 +160,9 @@ class CheckQuestCreatedToday(APIView):
     
 ##해당 회원이 오늘 랜덤 퀘스트를 수행했는지 여부
 class PerformTodayQuestYN(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self,request):
-        user_id = 90000
+        user_id = self.request.user.id
         
         if not user_id:
             return Response({"error": "User ID is required"}, status=status.HTTP_400_BAD_REQUEST)
@@ -200,17 +178,20 @@ class PerformTodayQuestYN(APIView):
         
         return Response({"qs_perform_yn": performed}, status=status.HTTP_200_OK)
 
-##퀘스트 생성과 수행 여부를 한번에 판단하는 메소드 => 이거 사용할거면 위에 2개 지워야함
+## 퀘스트 생성과 수행 여부를 한번에 판단하는 메소드 
+## 수행 step
+## 1. 오늘 퀘스트 생성했는지 먼저 판단
+## 2. 생성했으면 수행여부 판단, 생성안했으면 수행도 안한 것이므로 둘 다 false리턴
 class CheckQuestCreationAndPerformanceToday(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request):
-        user_id = 90000
+        user_id = self.request.user.id
         
         if not user_id:
             return Response({"error": "User ID is required"}, status=status.HTTP_400_BAD_REQUEST)
         
         today = date.today()
         
-        # Check if quest history exists for today
         try:
             quest_history = Quest_history.objects.get(user_id=user_id, qs_date=today)
             quest_created_today = True
