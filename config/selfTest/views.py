@@ -75,7 +75,7 @@ class getSelfTestDate(APIView):
 
 ## 센터 찾기 
 ## case1) 서울 강남구의 센터 정보 가져옴 (필터 걸기전에 기본으로 보여줄 정보)
-class getDefaultCenterInfo(APIView):
+class getCenterInfo(APIView):
     def get(self,request):
         search_terms = ["서울", "강남구"]
         
