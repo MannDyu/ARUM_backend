@@ -44,21 +44,32 @@ class RegisterSerializer(serializers.ModelSerializer):
 
         user.set_password(validate_data['password'])
         user.save()
-        token = Token.objects.create(user=user)
+        token = Token.objects.create(user=user)  # 사용자 생성 후 토큰 생성
         return user
 
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
     password = serializers.CharField(required=True)
 
+    # def validate(self, data):
+    #     user = authenticate(**data)
+    #     if user:
+    #         token = Token.objects.get(user=user)
+    #         return token
+    #     raise serializers.ValidationError(
+    #         {'error' : "user not exist"}
+    #     )
     def validate(self, data):
         user = authenticate(**data)
-        if user:
-            token = Token.objects.get(user=user)
-            return token
-        raise serializers.ValidationError(
-            {'error' : "user not exist"}
-        )
+        if user and user.is_active:
+            token, _ = Token.objects.get_or_create(user=user)
+            return {
+                'token': token.key,
+                'username': user.username
+            }
+        raise serializers.ValidationError({'error': "Invalid credentials"})
+
+
 
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
