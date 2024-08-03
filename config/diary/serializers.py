@@ -8,3 +8,8 @@ class DiarySerializer(serializers.ModelSerializer):
         model = Diary
         fields = ['id', 'user', 'created_at', 'emoj', 'emotion1', 'emotion2','emotion3', 'content1', 'content2', 'content3']
         read_only_fields = ['user', 'created_at']
+
+class EmojiSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Diary
+        fields = ['created_at', 'emoj']
