@@ -8,7 +8,7 @@ cd <project-directory>
 ### 2. 가상 환경 설정
 python -m venv venv
 
-###가상 환경 활성화 (운영 체제에 따라 선택)
+### 가상 환경 활성화 (운영 체제에 따라 선택)
 source venv/bin/activate       # Linux/MacOS
 .\venv\Scripts\activate        # Windows
 
