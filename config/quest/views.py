@@ -96,12 +96,32 @@ class MonthlyQuestList(APIView):
 
         user_id = self.request.user.id
        
+        date_today = date.today()
+        year = date_today.year
+        month = date_today.month
+
+        try:
+            start_date = datetime(year=int(year), month=int(month), day=1)
+            end_date = datetime(year=int(year), month=int(month)+1, day=1) if month != 12 else datetime(year=int(year)+1, month=1, day=1)
+            
+            quest_dates = Quest_history.objects.filter(
+                user_id=user_id, 
+                qs_date__gte=start_date, 
+                qs_date__lt=end_date
+            ).values('qs_date', 'qs_perform_yn')
+            
+            return Response(list(quest_dates), status=status.HTTP_200_OK)
+        except ValueError:
+            return Response({"error": "Invalid year or month"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    def post(self, request):
+
+        user_id = self.request.user.id
+       
         date_str = request.data.get('date')
         date_obj = datetime.strptime(date_str, '%Y-%m-%d')
         year = date_obj.year
         month = date_obj.month
-
-        # user_id = request.data.get('user_id')
 
         try:
             start_date = datetime(year=int(year), month=int(month), day=1)
@@ -123,6 +143,24 @@ class SpecificQuestInfo(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        user_id = self.request.user.id #90000
+
+        date_today = date.today()
+        year = date_today.year
+        month = date_today.month
+        day = date_today.day
+     
+        try:
+            qs_date = datetime(year=int(year), month=int(month), day=int(day))
+            
+            quest_history = Quest_history.objects.filter(user_id=user_id, qs_date=qs_date)
+            
+            serializer = QuestHistorySerializer(quest_history, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except ValueError:
+            return Response({"error": "Invalid date format"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    def post(self, request):
         user_id = self.request.user.id #90000
 
         date_str = request.data.get('date')
