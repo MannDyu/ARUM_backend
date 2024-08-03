@@ -3,7 +3,7 @@ from django.utils.timezone import make_aware
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from .serializers import DiarySerializer
+from .serializers import DiarySerializer, EmojiSerializer
 from .models import Diary
 from collections import Counter
 from django.utils import timezone
@@ -37,6 +37,18 @@ class MonthDiaryListView(generics.ListAPIView):
         start_of_month = make_aware(datetime(now.year, now.month, 1))
         end_of_month = make_aware(datetime(now.year, now.month + 1, 1)) if now.month < 12 else make_aware(datetime(now.year + 1, 1, 1))
         return Diary.objects.filter(user=self.request.user, created_at__range=(start_of_month, end_of_month))
+
+#한 달 이모지 목록(달력)
+class EmojCalendarDiaryView(generics.ListAPIView):
+    serializer_class = EmojiSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        now = datetime.now()
+        start_of_month = make_aware(datetime(now.year, now.month, 1))
+        end_of_month = make_aware(datetime(now.year, now.month + 1, 1)) if now.month < 12 else make_aware(datetime(now.year + 1, 1, 1))
+    
+        return Diary.objects.filter(user=self.request.user, created_at__range=(start_of_month, end_of_month)).values('created_at','emoj')
 
 #일기 작성 여부
 class CheckTodayDiaryView(generics.ListAPIView):
