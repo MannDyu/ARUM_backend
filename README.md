@@ -1,7 +1,7 @@
 # ARUM_backend
 
 
-# 1. 프로젝트 클론
+### 1. 프로젝트 클론
 git clone <repository-url>
 cd <project-directory>
 
