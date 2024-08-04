@@ -9,10 +9,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.views import APIView 
 
+#회원가입
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
 
+#로그인
 class LoginView(generics.CreateAPIView):
     serializer_class = LoginSerializer
 
@@ -25,14 +27,6 @@ class LoginView(generics.CreateAPIView):
                 'username': user_data['username']
             }, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    
-class ProfileView(generics.RetrieveUpdateAPIView):
-    queryset = Profile.objects.all()
-    serializer_class = ProfileSerializer
-    permission_classes = [CustomReadOnly]
-    
-    
     
 # 로그아웃 
 class LogoutView(APIView):  # APIView를 올바르게 사용
@@ -69,3 +63,9 @@ class LogoutView(APIView):  # APIView를 올바르게 사용
 #         else:
 #             logger.warning("No valid token found")
 #             return Response({"detail": "유효한 토큰이 없습니다"}, status=status.HTTP_401_UNAUTHORIZED)
+
+#프로필(mypage)
+class ProfileView(generics.RetrieveUpdateAPIView):
+    queryset = Profile.objects.all()
+    serializer_class = ProfileSerializer
+    permission_classes = [CustomReadOnly]

@@ -1,12 +1,12 @@
-from django.contrib.auth.models import User #장고 기본 유저모델
-from django.contrib.auth.password_validation import validate_password #검증
+from django.contrib.auth.models import User 
+from django.contrib.auth.password_validation import validate_password 
 from .models import Profile
 from rest_framework import serializers
-from rest_framework.authtoken.models import Token #토큰 모델
-from rest_framework.validators import UniqueValidator #이메일 중복 방지
-
+from rest_framework.authtoken.models import Token 
+from rest_framework.validators import UniqueValidator 
 from django.contrib.auth import authenticate
 
+#회원가입
 class RegisterSerializer(serializers.ModelSerializer):
     
     email = serializers.EmailField(
@@ -47,6 +47,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         token = Token.objects.create(user=user)  # 사용자 생성 후 토큰 생성
         return user
 
+#로그인
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
     password = serializers.CharField(required=True)
@@ -69,10 +70,24 @@ class LoginSerializer(serializers.Serializer):
             }
         raise serializers.ValidationError({'error': "Invalid credentials"})
 
-
-
+#프로필
 class ProfileSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+    new_password = serializers.CharField(source='user.password', write_only=True)
+
     class Meta:
         model = Profile
-        fields = ("nickname")
+        fields = ("username","new_password","nickname")
+    
+    def update(self, instance, validated_data):
+        new_password = validated_data.pop('new_password', None)
+
+        instance.nickname = validated_data.get('nickname', instance.nickname)
+        instance.save()
+
+        if new_password:
+            instance.user.set_password(new_password)
+            instance.user.save()
+
+        return instance
 
