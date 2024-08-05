@@ -17,3 +17,8 @@ class Self_test_result(models.Model):
     max_score = models.IntegerField()
     result_subheading = models.CharField(max_length=30)
     result_content = models.CharField(max_length=80)
+    result_image = models.ImageField(upload_to='images/server',blank=True,null=True) 
+
+class Search_center(models.Model):
+    city = models.CharField(max_length=5)
+    district = models.CharField(max_length=10)

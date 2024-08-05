@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Hospital,Self_test,Self_test_result
+from .models import Hospital,Self_test,Self_test_result,Search_center
 
 class HospitalSerializer(serializers.ModelSerializer):
     class Meta:
@@ -15,3 +15,8 @@ class SelfTestResultSerializer(serializers.ModelSerializer):
     class Meta:
         model = Self_test_result
         fields = '__all__'
+
+class SearchCenterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Search_center
+        fields = ['district']
