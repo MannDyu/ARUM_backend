@@ -3,7 +3,7 @@ from django.utils.timezone import make_aware
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from .serializers import DiarySerializer, EmojiSerializer
+from .serializers import DiarySerializer, FeelSerializer
 from .models import Diary
 from collections import Counter
 from django.utils import timezone
@@ -38,9 +38,9 @@ class MonthDiaryListView(generics.ListAPIView):
         end_of_month = make_aware(datetime(now.year, now.month + 1, 1)) if now.month < 12 else make_aware(datetime(now.year + 1, 1, 1))
         return Diary.objects.filter(user=self.request.user, created_at__range=(start_of_month, end_of_month))
 
-#한 달 이모지 목록(달력)
-class EmojCalendarDiaryView(generics.ListAPIView):
-    serializer_class = EmojiSerializer
+#한 달 기분 목록(달력)
+class FeelCalendarDiaryView(generics.ListAPIView):
+    serializer_class = FeelSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
@@ -48,7 +48,7 @@ class EmojCalendarDiaryView(generics.ListAPIView):
         start_of_month = make_aware(datetime(now.year, now.month, 1))
         end_of_month = make_aware(datetime(now.year, now.month + 1, 1)) if now.month < 12 else make_aware(datetime(now.year + 1, 1, 1))
     
-        return Diary.objects.filter(user=self.request.user, created_at__range=(start_of_month, end_of_month)).values('created_at','emoj')
+        return Diary.objects.filter(user=self.request.user, created_at__range=(start_of_month, end_of_month)).values('created_at','feel')
 
 #일기 작성 여부
 class CheckTodayDiaryView(generics.ListAPIView):
@@ -66,8 +66,8 @@ class CheckTodayDiaryView(generics.ListAPIView):
         else:
             return Response({"diary_yn": False}) #작성하지 않음
 
-#한 달 이모지 통계
-class EmojRatioView(generics.ListAPIView):
+#한 달 기분 통계
+class FeelRatioView(generics.ListAPIView):
     serializer_class = DiarySerializer
     permission_classes = [IsAuthenticated]
 
@@ -80,7 +80,7 @@ class EmojRatioView(generics.ListAPIView):
     def get(self, request, *args, **kwargs):
         queryset = self.get_queryset()
 
-        emoji_descriptions = {
+        feel_descriptions = {
             '아주 좋음': 0,
             '좋음': 0,
             '보통': 0,
@@ -88,18 +88,18 @@ class EmojRatioView(generics.ListAPIView):
             '아주 나쁨': 0
         }
 
-        emojs = [diary.emoj for diary in queryset if diary.emoj]
+        feels = [diary.feel for diary in queryset if diary.feel]
         
-        if emojs:
-            emojs_count = Counter(emojs)
-            total_count = sum(emojs_count.values())
+        if feels:
+            feels_count = Counter(feels)
+            total_count = sum(feels_count.values())
 
-            for emoji, count in emojs_count.items():
-                if emoji in emoji_descriptions:
-                    emoji_descriptions[emoji] += count
+            for feel, count in feels_count.items():
+                if feel in feel_descriptions:
+                    feel_descriptions[feel] += count
 
-            emoj_ratios = {emoji: (count / total_count) * 100 for emoji, count in emoji_descriptions.items()}
+            feel_ratios = {feel: (count / total_count) * 100 for feel, count in feel_descriptions.items()}
         else:
-            emoj_ratios = {emoji: 0 for emoji in emoji_descriptions.keys()}
+            feel_ratios = {feel: 0 for emoji in feel_descriptions.keys()}
 
-        return Response(emoj_ratios)
+        return Response(feel_ratios)
