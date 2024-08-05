@@ -7,7 +7,7 @@ from .serializers import *
 from django.db.models import Q
 from datetime import date
 from .models import Self_test, Self_test_result,Hospital
-
+from .models import Search_center
 
 ## 테스트 점수 받아서 디비에 저장하고 결과 뿌려주는 기능
 ## case1) 자가 테스트 처음 -> 디비에 새로운 행 추가(insert)
@@ -43,7 +43,8 @@ class scoreSaveAndGetResult(APIView):
             response_data = {
                 "test_score": self_test.test_score,
                 "result_subheading": test_result.result_subheading,
-                "result_content": test_result.result_content
+                "result_content": test_result.result_content,
+                "result_image": test_result.result_image.url if test_result.result_image else None, ##result_image는 이미지 파일의 경로를 저장, 이를 URL로 변환하여 응답에 포함
             }
 
             return Response(response_data, status=status.HTTP_200_OK)
@@ -133,3 +134,24 @@ class getCenterInfo(APIView):
         ]
 
         return Response(hospital_data, status=status.HTTP_200_OK)
+    
+## 검색 필터 지역구 불러오기
+class getDistrict(APIView):
+    def post(self,request):
+        city = request.data.get('city')
+
+        if not city:
+            return Response({"error": "City parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # 주어진 city 값으로 Search_center 테이블에서 데이터 필터링
+        centers = Search_center.objects.filter(city=city)
+        
+        if not centers.exists():
+            return Response({"error": "No records found for the given city"}, status=status.HTTP_404_NOT_FOUND)
+        
+        # QuerySet을 직렬화하여 결과 반환
+        # serializer = SearchCenterSerializer(centers, many=True)
+        # return Response(serializer.data, status=status.HTTP_200_OK)
+    
+        districts = [center.district for center in centers]
+        return Response({"districts": districts}, status=status.HTTP_200_OK)
