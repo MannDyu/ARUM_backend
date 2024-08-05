@@ -100,6 +100,6 @@ class FeelRatioView(generics.ListAPIView):
 
             feel_ratios = {feel: (count / total_count) * 100 for feel, count in feel_descriptions.items()}
         else:
-            feel_ratios = {feel: 0 for emoji in feel_descriptions.keys()}
+            feel_ratios = {feel: 0 for feel in feel_descriptions.keys()}
 
         return Response(feel_ratios)
