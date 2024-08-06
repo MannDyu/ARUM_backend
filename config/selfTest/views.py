@@ -155,3 +155,22 @@ class getDistrict(APIView):
     
         districts = [center.district for center in centers]
         return Response({"districts": districts}, status=status.HTTP_200_OK)
+    
+## 해당 회원의 최근 자가테스트 점수 반환
+class getSelfTestScore(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request):
+        user_id = self.request.user.id
+
+        try:
+            # Self_test 테이블에서 해당 유저의 레코드 조회
+            self_test = Self_test.objects.get(user_id=user_id)
+            response_data = {
+                "test_score": self_test.test_score
+            }
+            return Response(response_data, status=status.HTTP_200_OK)
+
+        except Self_test.DoesNotExist:
+            return Response({"error": "No test record found for the user"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
