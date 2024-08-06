@@ -81,11 +81,11 @@ class FeelRatioView(generics.ListAPIView):
         queryset = self.get_queryset()
 
         feel_descriptions = {
-            '아주 좋음': 0,
-            '좋음': 0,
-            '보통': 0,
-            '나쁨': 0,
-            '아주 나쁨': 0
+            '아주 좋아요': 0,
+            '좋아요': 0,
+            '괜찮아요': 0,
+            '나빠요': 0,
+            '아주 나빠요': 0
         }
 
         feels = [diary.feel for diary in queryset if diary.feel]
