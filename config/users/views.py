@@ -9,6 +9,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.views import APIView 
 
+
+
 #회원가입
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -69,3 +71,4 @@ class ProfileView(generics.RetrieveUpdateAPIView):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
     permission_classes = [CustomReadOnly]
+
