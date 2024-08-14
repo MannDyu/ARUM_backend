@@ -1,10 +1,21 @@
+import jwt
 from django.contrib.auth.models import User 
 from django.contrib.auth.password_validation import validate_password 
 from .models import Profile
 from rest_framework import serializers
-from rest_framework.authtoken.models import Token 
 from rest_framework.validators import UniqueValidator 
 from django.contrib.auth import authenticate
+from rest_framework_simplejwt.tokens import RefreshToken
+from .models import RefreshTokenModel
+from django.utils import timezone
+from django.conf import settings
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer, TokenObtainSerializer
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.views import APIView
+from django.contrib.auth.hashers import check_password
+
+from django.shortcuts import render, get_object_or_404
 
 #회원가입
 class RegisterSerializer(serializers.ModelSerializer):
@@ -30,45 +41,70 @@ class RegisterSerializer(serializers.ModelSerializer):
         fields = ('username', 'email', 'password', 'password2')
 
     def validate(self, data):
+        username = data.get('username', None)
+        #username이 이미 존재한다면,
+        if User.objects.filter(username=username).exists():
+            raise serializers.ValidationError("user already exists")
+        #비민번호가 일치하지 않는다면,
         if data['password'] != data['password2']:
             raise serializers.ValidationError(
                 {'password':"password fields didn't match"}
             )
         return data
     
-    def create(self, validate_data):
+    def create(self, validated_data):
         user = User.objects.create_user(
-            username = validate_data['username'],
-            email = validate_data['email']
+            username=validated_data['username'],
+            email=validated_data['email']
         )
-
-        user.set_password(validate_data['password'])
+        user.set_password(validated_data['password'])
         user.save()
-        token = Token.objects.create(user=user)  # 사용자 생성 후 토큰 생성
         return user
 
 #로그인
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
-    password = serializers.CharField(required=True)
+    password = serializers.CharField(required=True, write_only=True)
 
-    # def validate(self, data):
-    #     user = authenticate(**data)
-    #     if user:
-    #         token = Token.objects.get(user=user)
-    #         return token
-    #     raise serializers.ValidationError(
-    #         {'error' : "user not exist"}
-    #     )
     def validate(self, data):
-        user = authenticate(**data)
-        if user and user.is_active:
-            token, _ = Token.objects.get_or_create(user=user)
-            return {
-                'token': token.key,
-                'username': user.username
-            }
-        raise serializers.ValidationError({'error': "Invalid credentials"})
+        username = data.get('username')
+        password = data.get('password')
+
+        user = User.objects.filter(username=username).first()
+        if User.objects.filter(username=username).exists():
+            if not user.check_password(password):
+                raise serializers.ValidationError('password:"wrong password"')
+        else:
+            raise serializers.ValidationError("user account not exist")
+
+        token = TokenObtainPairSerializer.get_token(user) #refresh토큰 생성
+        refresh_token = str(token)
+        access_token = str(token.access_token) #access토큰 생성
+
+        expires_at = timezone.now() + settings.SIMPLE_JWT.get('REFRESH_TOKEN_LIFETIME')
+
+        RefreshTokenModel.objects.update_or_create(
+            user=user,
+            defaults={
+                'refresh_token': refresh_token,
+                'expires_at': expires_at
+            }            
+        )
+
+        response = Response(
+            {
+                "user": user.username,
+                "message": "login success",
+                "jwt_token": {
+                    "access_token": access_token,
+                    "refresh_token": refresh_token,
+                },
+            },
+            status=status.HTTP_200_OK
+        )
+        response.set_cookie("access_token", access_token, httponly=True)
+        response.set_cookie("refresh_token", refresh_token, httponly=True)
+        return response
 
 #프로필
 class ProfileSerializer(serializers.ModelSerializer):
@@ -90,6 +126,3 @@ class ProfileSerializer(serializers.ModelSerializer):
             instance.user.save()
 
         return instance
-    
-
-

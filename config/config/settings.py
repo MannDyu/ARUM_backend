@@ -15,6 +15,7 @@ import os
 import config.db_settings as db_settings
 import pymysql
 pymysql.install_as_MySQLdb()
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -118,11 +119,21 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
+#jwt토큰으로 변경
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES' : [
-        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
-    
+}
+
+REST_USE_JWT = True
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': True,  #기존 refresh token을 블랙리스트에 등록
+    'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
 # Internationalization
