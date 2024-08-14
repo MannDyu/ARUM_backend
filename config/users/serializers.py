@@ -102,8 +102,7 @@ class LoginSerializer(serializers.Serializer):
             },
             status=status.HTTP_200_OK
         )
-        response.set_cookie("access_token", access_token, httponly=True)
-        response.set_cookie("refresh_token", refresh_token, httponly=True)
+
         return response
 
 #프로필
