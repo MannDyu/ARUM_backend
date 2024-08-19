@@ -119,10 +119,11 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
-#jwt토큰으로 변경
+#jwt토큰, session저장
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES' : [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
     ],
 }
 
