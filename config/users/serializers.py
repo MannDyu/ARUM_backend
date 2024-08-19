@@ -91,19 +91,14 @@ class LoginSerializer(serializers.Serializer):
             }            
         )
 
-        response = Response(
-            {
-                "user": user.username,
-                "message": "login success",
-                "jwt_token": {
-                    "access_token": access_token,
-                    "refresh_token": refresh_token,
-                },
-            },
-            status=status.HTTP_200_OK
-        )
-
-        return response
+        return {
+            "user": user.username,
+            "message": "login success",
+            "jwt_token": {
+                "access_token": access_token,
+                "refresh_token": refresh_token,
+            }
+        }
 
 #프로필
 class ProfileSerializer(serializers.ModelSerializer):
